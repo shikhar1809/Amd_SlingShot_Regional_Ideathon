@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with goals and preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "goal": { "type": "string", "enum": ["Lose weight", "Build muscle", "Eat healthier", "More energy"] },
+        "diet": { "type": "string", "enum": ["None", "Vegetarian", "Vegan", "Gluten-free"] },
+        "onboardingComplete": { "type": "boolean" },
+        "streak": { "type": "number" },
+        "lastLogDate": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "goal", "diet"]
+    },
+    "Meal": {
+      "title": "Meal Log",
+      "description": "Logged meal with nutrition analysis",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "calories": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fat": { "type": "number" },
+        "healthScore": { "type": "number" },
+        "tip": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "calories", "protein", "carbs", "fat", "timestamp"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "Single message in a chat conversation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "isSecured": { "type": "boolean" }
+      },
+      "required": ["userId", "role", "content", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/meals/{mealId}": {
+      "schema": "Meal",
+      "description": "User meal logs"
+    },
+    "/chats/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "AI chat history"
+    }
+  }
+}

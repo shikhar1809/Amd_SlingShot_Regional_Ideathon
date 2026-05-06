@@ -1,0 +1,12 @@
+{
+  "name": "NutriMind",
+  "description": "Smart food and health assistant with AI-powered nutrition insights and habit tracking.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "AI-powered meal analysis",
+    "Smart nutrition tracking",
+    "Personalized health coaching"
+  ]
+}

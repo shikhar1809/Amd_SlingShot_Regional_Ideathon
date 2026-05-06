@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Validation
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'goal', 'diet', 'onboardingComplete', 'streak', 'createdAt', 'updatedAt'])
+             && data.uid == request.auth.uid
+             && data.email is string && data.email.size() < 256
+             && data.goal in ['Lose weight', 'Build muscle', 'Eat healthier', 'More energy']
+             && data.diet in ['None', 'Vegetarian', 'Vegan', 'Gluten-free']
+             && data.onboardingComplete is bool
+             && data.streak is number
+             && (data.createdAt == request.time || data.createdAt == existing().createdAt)
+             && data.updatedAt == request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['goal', 'diet', 'onboardingComplete', 'streak', 'lastLogDate', 'updatedAt'])
+        || incoming().diff(existing()).affectedKeys().hasOnly(['streak', 'lastLogDate', 'updatedAt'])
+      );
+    }
+
+    // Meal Validation
+    function isValidMeal(data) {
+      return data.keys().hasAll(['userId', 'name', 'calories', 'protein', 'carbs', 'fat', 'timestamp', 'healthScore', 'tip', 'imageUrl'])
+             && data.userId == request.auth.uid
+             && data.name is string && data.name.size() < 256
+             && data.calories is number
+             && data.protein is number
+             && data.carbs is number
+             && data.fat is number
+             && data.healthScore is number
+             && data.tip is string && data.tip.size() < 2000
+             && (data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() < 2000000))
+             && data.timestamp == request.time;
+    }
+
+    match /meals/{mealId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidMeal(incoming()) && (mealId.size() > 0);
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // Chat Message Validation
+    function isValidChatMessage(data) {
+      return data.keys().hasAll(['userId', 'role', 'content', 'timestamp', 'isSecured'])
+             && data.userId == request.auth.uid
+             && data.role in ['user', 'model']
+             && data.content is string && data.content.size() < 5000
+             && data.timestamp == request.time
+             && data.isSecured is bool;
+    }
+
+    match /chats/{messageId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidChatMessage(incoming()) && isValidId(messageId);
+    }
+  }
+}
